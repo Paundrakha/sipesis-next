@@ -62,10 +62,10 @@ export default function Sidebar() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary font-extrabold">
-                SK
+                SPS
               </div>
               <div>
-                <b className="block text-lg leading-tight">SIPKEL</b>
+                <b className="block text-lg leading-tight">SIPESIS</b>
                 <small className="text-[11px] text-slate-400">
                   Perizinan Siswa SMK
                 </small>
