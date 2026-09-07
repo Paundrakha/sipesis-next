@@ -144,7 +144,6 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-5 text-center text-xs text-slate-400 sm:mt-6">
-          Demo: faraday (guru) atau satpam. Password bebas pada preview.
         </p>
       </div>
     </main>

@@ -6,8 +6,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SIPKEL — Sistem Perizinan Keluar Masuk Siswa",
-  description: "Sistem Perizinan Siswa SMK",
+  title: "SIPESIS — Sistem Perizinan Siswa",
+  description: "Sistem Perizinan Siswa",
 };
 
 export default function RootLayout({
