@@ -29,12 +29,12 @@ export default function DashboardLayout({
 
   if (!user) return null;
 
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="w-full p-4 pt-16 lg:ml-64 lg:w-[calc(100%-16rem)] lg:p-7 lg:pt-7">
-        {children}
-      </main>
-    </div>
-  );
-}
+return (
+  <div className="min-h-screen w-full">
+    <Sidebar />
+
+    <main className="w-full min-w-0 px-3 pb-6 pt-16 sm:px-4 lg:ml-64 lg:w-[calc(100%-16rem)] lg:p-7 lg:pt-7">
+      {children}
+    </main>
+  </div>
+);
