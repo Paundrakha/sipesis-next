@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +10,7 @@ import {
   PlusCircle,
   Eye,
   History,
+  BarChart3,
   LogOut,
   Menu,
   X,
@@ -17,9 +19,15 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/permission", label: "Perizinan", icon: PlusCircle, guruOnly: true },
+  {
+    href: "/dashboard/permission",
+    label: "Perizinan",
+    icon: PlusCircle,
+    guruOnly: true,
+  },
   { href: "/dashboard/monitor", label: "Pemantauan", icon: Eye },
   { href: "/dashboard/history", label: "Riwayat", icon: History },
+  { href: "/dashboard/statistics", label: "Statistik", icon: BarChart3 },
 ];
 
 export default function Sidebar() {
@@ -28,9 +36,7 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isGuru = user?.role === "guru";
 
-  const filteredNav = navItems.filter(
-    (item) => !item.guruOnly || isGuru
-  );
+  const filteredNav = navItems.filter((item) => !item.guruOnly || isGuru);
 
   return (
     <>
@@ -55,19 +61,25 @@ export default function Sidebar() {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar text-white transition-transform duration-300 lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="border-b border-white/10 px-5 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary font-extrabold">
-                SPS
+              <div className="flex h-10 w-10 flex-none items-center justify-center">
+                <Image
+                  src="/logo-smk.webp"
+                  alt="Logo SMK N 2 Klaten"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-contain"
+                />
               </div>
               <div>
                 <b className="block text-lg leading-tight">SIPESIS</b>
                 <small className="text-[11px] text-slate-400">
-                  Perizinan Siswa SMK
+                  Sistem Perizinan Siswa
                 </small>
               </div>
             </div>
@@ -99,7 +111,7 @@ export default function Sidebar() {
                   "mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-300 transition-colors",
                   active
                     ? "bg-[#1e3a66] text-white"
-                    : "hover:bg-[#1e3a66] hover:text-white"
+                    : "hover:bg-[#1e3a66] hover:text-white",
                 )}
               >
                 <Icon className="h-4 w-4 flex-none" />

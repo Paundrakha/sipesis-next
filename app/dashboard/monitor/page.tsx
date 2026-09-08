@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import TopBar from "@/components/TopBar";
 import DataTable from "@/components/DataTable";
-import QRScanner from "@/components/QRscanner";
-import { Search, ScanLine } from "lucide-react";
+import { Search } from "lucide-react";
+import { getDateKey, getTodayKey } from "@/lib/utils";
 
 export default function MonitorPage() {
   const { user } = useAuth();
@@ -20,37 +20,39 @@ export default function MonitorPage() {
   const isGuru = user?.role === "guru";
 
   const [tokenSearch, setTokenSearch] = useState("");
-  const [scannerOpen, setScannerOpen] = useState(false);
 
-  const handleScan = (token: string) => {
-    setTokenSearch(token);
-  };
+  // Pemantauan hanya menampilkan data hari ini; begitu tanggal berganti, otomatis kembali ke 0.
+  const [todayKey, setTodayKey] = useState(getTodayKey);
+
+  useEffect(() => {
+    // Cek tiap menit kalau-kalau tab dibiarkan terbuka melewati tengah malam.
+    const interval = setInterval(() => {
+      const current = getTodayKey();
+      setTodayKey((prev) => (prev === current ? prev : current));
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const todaysPermissions = useMemo(
+    () => permissions.filter((x) => getDateKey(x) === todayKey),
+    [permissions, todayKey]
+  );
 
   const filtered = tokenSearch
-    ? permissions.filter(
+    ? todaysPermissions.filter(
         (x) =>
           x.token.toLowerCase().includes(tokenSearch.toLowerCase()) ||
           x.name.toLowerCase().includes(tokenSearch.toLowerCase())
       )
-    : permissions;
+    : todaysPermissions;
 
   return (
     <div>
       <TopBar
         title="Pemantauan"
-        subtitle="Lihat status siswa dari izin hingga kembali ke sekolah."
-        permissions={permissions}
+        subtitle="Lihat status siswa dari izin hingga kembali ke sekolah hari ini."
+        permissions={todaysPermissions}
       />
-
-      {!isGuru && (
-        <button
-          onClick={() => setScannerOpen(true)}
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-soft active:bg-primary-dark"
-        >
-          <ScanLine className="h-4 w-4" />
-          Scan QR Code Siswa
-        </button>
-      )}
 
       {!isGuru && (
         <div className="mb-4">
@@ -74,7 +76,7 @@ export default function MonitorPage() {
           <p className="mt-0.5 text-xs text-muted sm:mt-1 sm:text-sm">
             {isGuru
               ? "Status perizinan dan keberadaan siswa."
-              : "Scan QR atau cari nama untuk validasi siswa."}
+              : "Cari token atau nama untuk validasi siswa."}
           </p>
         </div>
         <DataTable
@@ -86,12 +88,6 @@ export default function MonitorPage() {
           onReject={rejectPermission}
         />
       </div>
-
-      <QRScanner
-        isOpen={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        onScan={handleScan}
-      />
     </div>
   );
 }

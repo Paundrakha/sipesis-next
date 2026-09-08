@@ -15,6 +15,7 @@ export interface Permission {
   photoOut: string | null;
   photoIn: string | null;
   created: string;
+  createdAt: string;
   status: PermissionStatus;
   approvedAt: string | null;
   returnedAt: string | null;

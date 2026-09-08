@@ -2,9 +2,8 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, RotateCcw, Plus, Trash2, QrCode } from "lucide-react";
+import { Camera, RotateCcw, Plus, Trash2, ClipboardCheck, Check, X, Copy } from "lucide-react";
 import CameraModal from "./CameraModal";
-import QRModal from "./QRModal";
 import { StudentDraft } from "@/types";
 
 interface PermissionFormProps {
@@ -29,7 +28,8 @@ export default function PermissionForm({ onSubmit }: PermissionFormProps) {
   const [cameraTarget, setCameraTarget] = useState<{ index: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [generatedToken, setGeneratedToken] = useState("");
-  const [qrOpen, setQrOpen] = useState(false);
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const addStudent = () => {
     setStudents([...students, { name: "", nis: "", className: "", photo: "" }]);
@@ -73,7 +73,8 @@ export default function PermissionForm({ onSubmit }: PermissionFormProps) {
     try {
       const token = await onSubmit(students, common);
       setGeneratedToken(token);
-      setQrOpen(true);
+      setCopied(false);
+      setTokenModalOpen(true);
       setStudents([{ name: "", nis: "", className: "", photo: "" }]);
       setCommon({ purpose: "", period: "", outTime: "", deadline: "" });
     } catch (err) {
@@ -247,8 +248,8 @@ export default function PermissionForm({ onSubmit }: PermissionFormProps) {
             disabled={submitting}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white active:bg-primary-dark disabled:opacity-60"
           >
-            <QrCode className="h-4 w-4" />
-            {submitting ? "Memproses..." : "Buat Token & QR"}
+            <ClipboardCheck className="h-4 w-4" />
+            {submitting ? "Memproses..." : "Buat Izin"}
           </button>
         </div>
       </form>
@@ -259,17 +260,46 @@ export default function PermissionForm({ onSubmit }: PermissionFormProps) {
         onCapture={handleCapture}
       />
 
-      <QRModal
-        isOpen={qrOpen}
-        onClose={() => setQrOpen(false)}
-        permissions={generatedToken ? students.map((s, i) => ({
-          id: String(i), token: generatedToken, name: s.name,
-          nis: s.nis, className: s.className, purpose: "", period: "",
-          outTime: "", deadline: "", photo: s.photo, photoOut: null,
-          photoIn: null, created: "", status: "pending" as const,
-          approvedAt: null, returnedAt: null, rejectedAt: null, isLate: false,
-        })) : []}
-      />
+      {tokenModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/70 p-0 sm:items-center sm:p-5">
+          <div className="flex w-full max-w-sm flex-col rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Izin Berhasil Dibuat</h3>
+              <button onClick={() => setTokenModalOpen(false)} className="rounded-lg p-1 hover:bg-gray-100">
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-xs text-slate-500">Token izin keluar siswa</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-extrabold tracking-wider text-gray-900">{generatedToken}</p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(generatedToken);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  }}
+                  className="rounded-lg p-1.5 text-slate-500 hover:bg-gray-100"
+                  aria-label="Salin token"
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-center text-xs text-slate-500">
+                Sebutkan atau tunjukkan token ini ke satpam saat siswa keluar.
+              </p>
+
+              <button
+                onClick={() => setTokenModalOpen(false)}
+                className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-white active:bg-primary-dark"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

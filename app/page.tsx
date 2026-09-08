@@ -2,10 +2,11 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { firebaseLogin } from "@/lib/auth";
 import { UserRole } from "@/types";
-import { Shield, GraduationCap } from "lucide-react";
+import { Shield, GraduationCap, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [role, setRole] = useState<UserRole>("satpam");
   const [username, setUsername] = useState("satpam");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +38,11 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      const userData = await firebaseLogin(username.trim().toLowerCase(), password, role);
+      const userData = await firebaseLogin(
+        username.trim().toLowerCase(),
+        password,
+        role,
+      );
       setUser(userData);
       router.replace("/dashboard");
     } catch (err: unknown) {
@@ -44,12 +50,17 @@ export default function LoginPage() {
       const code = (err as { code?: string }).code;
 
       let message = "Login gagal. Periksa username dan password.";
-      if (msg === "USERNAME_TIDAK_DITEMUKAN") message = "Username tidak ditemukan.";
-      else if (msg === "DATA_USER_TIDAK_DITEMUKAN") message = "Data pengguna belum terdaftar di Firestore.";
-      else if (msg === "USERNAME_TIDAK_SESUAI") message = "Username tidak sesuai dengan akun Firebase.";
+      if (msg === "USERNAME_TIDAK_DITEMUKAN")
+        message = "Username tidak ditemukan.";
+      else if (msg === "DATA_USER_TIDAK_DITEMUKAN")
+        message = "Data pengguna belum terdaftar di Firestore.";
+      else if (msg === "USERNAME_TIDAK_SESUAI")
+        message = "Username tidak sesuai dengan akun Firebase.";
       else if (msg === "ROLE_TIDAK_SESUAI") message = "Role akun tidak sesuai.";
-      else if (code === "auth/invalid-credential") message = "Username atau password salah.";
-      else if (code === "auth/invalid-email") message = "Email akun Firebase tidak valid.";
+      else if (code === "auth/invalid-credential")
+        message = "Username atau password salah.";
+      else if (code === "auth/invalid-email")
+        message = "Email akun Firebase tidak valid.";
 
       setError(message);
     } finally {
@@ -61,14 +72,21 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-white px-4 py-8 sm:px-5 sm:py-10">
       <div className="w-full max-w-md">
         <div className="mb-7 flex flex-col items-center text-center sm:mb-8">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[18px] bg-primary text-[28px] font-extrabold text-white sm:h-[70px] sm:w-[70px] sm:rounded-[20px] sm:text-[31px]">
-            S
+          <div className="mb-4 flex h-16 w-16 items-center justify-center sm:h-[70px] sm:w-[70px]">
+            <Image
+              src="/logo-smk.webp"
+              alt="Logo SMK N 2 Klaten"
+              width={70}
+              height={70}
+              className="h-full w-full object-contain"
+              priority
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-[28px]">
-            SI P E S I S
+            S I P E S I S
           </h1>
           <p className="mt-1 text-sm text-slate-500 sm:text-[15px]">
-            Sistem Perizinan Siswa SMK
+            Sistem Perizinan Siswa
           </p>
         </div>
 
@@ -80,7 +98,9 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           <div>
-            <label className="mb-2 block text-sm font-bold text-gray-700">Login sebagai</label>
+            <label className="mb-2 block text-sm font-bold text-gray-700">
+              Login sebagai
+            </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -110,7 +130,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-bold text-gray-700">Username</label>
+            <label className="mb-2 block text-sm font-bold text-gray-700">
+              Username
+            </label>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -122,16 +144,34 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-bold text-gray-700">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              placeholder="Masukkan password"
-              required
-              className="h-[50px] w-full rounded-xl border border-[#dbe3ef] bg-white px-4 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 sm:h-[52px]"
-            />
+            <label className="mb-2 block text-sm font-bold text-gray-700">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Masukkan password"
+                required
+                className="h-[50px] w-full rounded-xl border border-[#dbe3ef] bg-white px-4 pr-11 text-base outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 sm:h-[52px]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-600"
+                aria-label={
+                  showPassword ? "Sembunyikan password" : "Tampilkan password"
+                }
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           <button
@@ -143,8 +183,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-5 text-center text-xs text-slate-400 sm:mt-6">
-        </p>
+        <p className="mt-5 text-center text-xs text-slate-400 sm:mt-6"></p>
       </div>
     </main>
   );

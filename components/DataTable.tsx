@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Permission, PermissionStatus } from "@/types";
 import { esc } from "@/lib/utils";
-import { Check, X, ArrowRight, RotateCcw, QrCode, Camera, Clock } from "lucide-react";
-import QRModal from "./QRModal";
+import { Check, X, ArrowRight, RotateCcw, KeyRound, Camera, Clock, Eye } from "lucide-react";
+import Link from "next/link";
 import CameraModal from "./CameraModal";
+import ClickableImage from "./ClickableImage";
 
 interface DataTableProps {
   permissions: Permission[];
@@ -14,6 +15,8 @@ interface DataTableProps {
   onMarkOut?: (id: string, photoOut?: string) => void;
   onMarkReturned?: (id: string, photoIn?: string) => void;
   onReject?: (id: string) => void;
+  /** Kalau false, tombol ambil foto keluar/masuk disembunyikan dan diarahkan ke halaman Pemantauan. */
+  allowCapture?: boolean;
 }
 
 const statusMap: Record<PermissionStatus, [string, string]> = {
@@ -42,7 +45,15 @@ function StatusBadge({ status, isLate }: { status: PermissionStatus; isLate?: bo
 }
 
 function Avatar({ photo, name }: { photo?: string; name: string }) {
-  if (photo) return <img src={photo} alt={name} className="h-9 w-9 rounded-lg object-cover" />;
+  if (photo)
+    return (
+      <ClickableImage
+        src={photo}
+        alt={name}
+        label={name}
+        className="h-9 w-9 rounded-lg object-cover"
+      />
+    );
   const initials = name.split(" ").map((a) => a[0]).slice(0, 2).join("").toUpperCase();
   return (
     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-sm font-extrabold text-blue-800">
@@ -68,17 +79,16 @@ function StudentCell({ x }: { x: Permission }) {
 /* ---------- MOBILE CARDS ---------- */
 
 function TeacherMobileCard({ x, onApprove, onReject }: { x: Permission; onApprove?: (id: string) => void; onReject?: (id: string) => void }) {
-  const [showQR, setShowQR] = useState(false);
   return (
     <>
       <div className="rounded-xl border border-border bg-white p-4 shadow-soft">
         <div className="flex items-start justify-between">
           <StudentCell x={x} />
           {x.token && (
-            <button onClick={() => setShowQR(true)} className="ml-2 flex flex-none items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary">
-              <QrCode className="h-3 w-3" />
+            <span className="ml-2 flex flex-none items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary">
+              <KeyRound className="h-3 w-3" />
               {x.token}
-            </button>
+            </span>
           )}
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -98,15 +108,15 @@ function TeacherMobileCard({ x, onApprove, onReject }: { x: Permission; onApprov
           </div>
         )}
       </div>
-      <QRModal isOpen={showQR} onClose={() => setShowQR(false)} permissions={[x]} />
     </>
   );
 }
 
-function GuardMobileCard({ x, onApprove, onMarkOut, onMarkReturned }: {
+function GuardMobileCard({ x, onApprove, onMarkOut, onMarkReturned, allowCapture = true }: {
   x: Permission; onApprove?: (id: string) => void;
   onMarkOut?: (id: string, photoOut?: string) => void;
   onMarkReturned?: (id: string, photoIn?: string) => void;
+  allowCapture?: boolean;
 }) {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraMode, setCameraMode] = useState<"out" | "in">("out");
@@ -129,7 +139,7 @@ function GuardMobileCard({ x, onApprove, onMarkOut, onMarkReturned }: {
         </div>
         <div className="mt-2 text-sm">
           <div className="flex items-center gap-2">
-            <QrCode className="h-3.5 w-3.5 text-primary" />
+            <KeyRound className="h-3.5 w-3.5 text-primary" />
             <span className="font-mono text-xs font-bold text-primary">{x.token}</span>
           </div>
           <div className="mt-1"><span className="text-[11px] text-slate-400">Keperluan: </span><span className="font-medium">{esc(x.purpose)}</span></div>
@@ -138,13 +148,13 @@ function GuardMobileCard({ x, onApprove, onMarkOut, onMarkReturned }: {
         {x.photo && (
           <div className="mt-2">
             <span className="text-[11px] text-slate-400">Foto Guru Piket:</span>
-            <img src={x.photo} alt="" className="mt-1 h-20 w-20 rounded-lg object-cover" />
+            <ClickableImage src={x.photo} alt={`Foto ${x.name}`} label={x.name} className="mt-1 h-20 w-20 rounded-lg object-cover" />
           </div>
         )}
         {x.photoOut && (
           <div className="mt-2">
             <span className="text-[11px] text-slate-400">Foto Keluar:</span>
-            <img src={x.photoOut} alt="" className="mt-1 h-20 w-20 rounded-lg object-cover" />
+            <ClickableImage src={x.photoOut} alt={`Foto keluar ${x.name}`} label={`Foto keluar - ${x.name}`} className="mt-1 h-20 w-20 rounded-lg object-cover" />
           </div>
         )}
         <div className="mt-3">
@@ -154,18 +164,30 @@ function GuardMobileCard({ x, onApprove, onMarkOut, onMarkReturned }: {
             </button>
           )}
           {x.status === "approved" && (
-            <button onClick={() => { setCameraMode("out"); setCameraOpen(true); }} className="flex w-full items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-xs font-bold text-white active:bg-primary-dark">
-              <Camera className="h-3.5 w-3.5" />Foto & Tandai Keluar
-            </button>
+            allowCapture ? (
+              <button onClick={() => { setCameraMode("out"); setCameraOpen(true); }} className="flex w-full items-center justify-center gap-1 rounded-lg bg-primary py-2.5 text-xs font-bold text-white active:bg-primary-dark">
+                <Camera className="h-3.5 w-3.5" />Foto & Tandai Keluar
+              </button>
+            ) : (
+              <Link href="/dashboard/monitor" className="flex w-full items-center justify-center gap-1 rounded-lg bg-slate-100 py-2.5 text-xs font-bold text-slate-600 active:bg-slate-200">
+                <Eye className="h-3.5 w-3.5" />Validasi di Pemantauan
+              </Link>
+            )
           )}
           {x.status === "out" && (
-            <button onClick={() => { setCameraMode("in"); setCameraOpen(true); }} className="flex w-full items-center justify-center gap-1 rounded-lg bg-green-100 py-2.5 text-xs font-bold text-green-800 active:bg-green-200">
-              <RotateCcw className="h-3.5 w-3.5" />Foto & Tandai Kembali
-            </button>
+            allowCapture ? (
+              <button onClick={() => { setCameraMode("in"); setCameraOpen(true); }} className="flex w-full items-center justify-center gap-1 rounded-lg bg-green-100 py-2.5 text-xs font-bold text-green-800 active:bg-green-200">
+                <RotateCcw className="h-3.5 w-3.5" />Foto & Tandai Kembali
+              </button>
+            ) : (
+              <Link href="/dashboard/monitor" className="flex w-full items-center justify-center gap-1 rounded-lg bg-slate-100 py-2.5 text-xs font-bold text-slate-600 active:bg-slate-200">
+                <Eye className="h-3.5 w-3.5" />Validasi di Pemantauan
+              </Link>
+            )
           )}
         </div>
       </div>
-      <CameraModal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={handleCapture} />
+      {allowCapture && <CameraModal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={handleCapture} />}
     </>
   );
 }
@@ -175,7 +197,7 @@ function HistoryMobileCard({ x }: { x: Permission }) {
     <div className="rounded-xl border border-border bg-white p-4 shadow-soft">
       <StudentCell x={x} />
       <div className="mt-2 flex items-center gap-2">
-        <QrCode className="h-3.5 w-3.5 text-primary" />
+        <KeyRound className="h-3.5 w-3.5 text-primary" />
         <span className="font-mono text-xs font-bold text-primary">{x.token}</span>
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
@@ -186,14 +208,35 @@ function HistoryMobileCard({ x }: { x: Permission }) {
         <div><span className="text-[11px] text-slate-400">Kembali</span><p className="font-medium">{x.returnedAt ?? "-"}</p></div>
         <div className="col-span-2"><StatusBadge status={x.status} isLate={x.isLate} /></div>
       </div>
+      {(x.photo || x.photoOut || x.photoIn) && (
+        <div className="mt-3 flex gap-3 border-t border-slate-100 pt-3">
+          {x.photo && (
+            <div>
+              <ClickableImage src={x.photo} alt={`Foto guru piket - ${x.name}`} label={`Foto guru piket - ${x.name}`} className="h-16 w-16 rounded-lg object-cover" />
+              <span className="mt-1 block text-[10px] text-slate-400">Guru Piket</span>
+            </div>
+          )}
+          {x.photoOut && (
+            <div>
+              <ClickableImage src={x.photoOut} alt={`Foto keluar - ${x.name}`} label={`Foto keluar - ${x.name}`} className="h-16 w-16 rounded-lg object-cover" />
+              <span className="mt-1 block text-[10px] text-slate-400">Keluar</span>
+            </div>
+          )}
+          {x.photoIn && (
+            <div>
+              <ClickableImage src={x.photoIn} alt={`Foto masuk - ${x.name}`} label={`Foto masuk - ${x.name}`} className="h-16 w-16 rounded-lg object-cover" />
+              <span className="mt-1 block text-[10px] text-slate-400">Masuk</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ---------- DESKTOP TABLE (same as before with QR + late badge) ---------- */
+/* ---------- DESKTOP TABLE (token badge + late badge) ---------- */
 
-export default function DataTable({ permissions, view, onApprove, onMarkOut, onMarkReturned, onReject }: DataTableProps) {
-  const [qrPermission, setQrPermission] = useState<Permission | null>(null);
+export default function DataTable({ permissions, view, onApprove, onMarkOut, onMarkReturned, onReject, allowCapture = true }: DataTableProps) {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraTarget, setCameraTarget] = useState<{ id: string; mode: "out" | "in" } | null>(null);
 
@@ -234,9 +277,9 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
                   <td className="px-3 py-3"><StudentCell x={x} /></td>
                   <td className="px-3 py-3">
                     {x.token && (
-                      <button onClick={() => setQrPermission(x)} className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary">
-                        <QrCode className="h-3 w-3" />{x.token}
-                      </button>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary">
+                        <KeyRound className="h-3 w-3" />{x.token}
+                      </span>
                     )}
                   </td>
                   <td className="px-3 py-3 text-sm">{x.period}</td>
@@ -257,7 +300,6 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
             </tbody>
           </table>
         </div>
-        <QRModal isOpen={!!qrPermission} onClose={() => setQrPermission(null)} permissions={qrPermission ? [qrPermission] : []} />
         <CameraModal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={handleCapture} />
       </>
     );
@@ -269,7 +311,7 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
     return (
       <>
         <div className="flex flex-col gap-3 lg:hidden">
-          {list.map((x) => <GuardMobileCard key={x.id} x={x} onApprove={onApprove} onMarkOut={onMarkOut} onMarkReturned={onMarkReturned} />)}
+          {list.map((x) => <GuardMobileCard key={x.id} x={x} onApprove={onApprove} onMarkOut={onMarkOut} onMarkReturned={onMarkReturned} allowCapture={allowCapture} />)}
         </div>
         <div className="hidden overflow-x-auto lg:block">
           <table className="w-full min-w-[900px] border-collapse">
@@ -306,10 +348,18 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
                       <button onClick={() => onApprove?.(x.id)} className="inline-flex items-center gap-1 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-bold text-green-800 hover:bg-green-200"><Check className="h-3 w-3" />Setujui</button>
                     )}
                     {x.status === "approved" && (
-                      <button onClick={() => { setCameraTarget({ id: x.id, mode: "out" }); setCameraOpen(true); }} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-dark"><Camera className="h-3 w-3" />Foto & Keluar</button>
+                      allowCapture ? (
+                        <button onClick={() => { setCameraTarget({ id: x.id, mode: "out" }); setCameraOpen(true); }} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-dark"><Camera className="h-3 w-3" />Foto & Keluar</button>
+                      ) : (
+                        <Link href="/dashboard/monitor" className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200"><Eye className="h-3 w-3" />Ke Pemantauan</Link>
+                      )
                     )}
                     {x.status === "out" && (
-                      <button onClick={() => { setCameraTarget({ id: x.id, mode: "in" }); setCameraOpen(true); }} className="inline-flex items-center gap-1 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-bold text-green-800 hover:bg-green-200"><RotateCcw className="h-3 w-3" />Foto & Kembali</button>
+                      allowCapture ? (
+                        <button onClick={() => { setCameraTarget({ id: x.id, mode: "in" }); setCameraOpen(true); }} className="inline-flex items-center gap-1 rounded-lg bg-green-100 px-3 py-1.5 text-xs font-bold text-green-800 hover:bg-green-200"><RotateCcw className="h-3 w-3" />Foto & Kembali</button>
+                      ) : (
+                        <Link href="/dashboard/monitor" className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200"><Eye className="h-3 w-3" />Ke Pemantauan</Link>
+                      )
                     )}
                   </td>
                 </tr>
@@ -317,7 +367,7 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
             </tbody>
           </table>
         </div>
-        <CameraModal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={handleCapture} />
+        {allowCapture && <CameraModal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={handleCapture} />}
       </>
     );
   }
@@ -328,7 +378,7 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
         {permissions.map((x) => <HistoryMobileCard key={x.id} x={x} />)}
       </div>
       <div className="hidden overflow-x-auto lg:block">
-        <table className="w-full min-w-[1000px] border-collapse">
+        <table className="w-full min-w-[1100px] border-collapse">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <th className="px-3 py-3">Siswa</th>
@@ -339,6 +389,7 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
               <th className="px-3 py-3">Disetujui</th>
               <th className="px-3 py-3">Kembali</th>
               <th className="px-3 py-3">Status</th>
+              <th className="px-3 py-3">Foto</th>
             </tr>
           </thead>
           <tbody>
@@ -352,6 +403,17 @@ export default function DataTable({ permissions, view, onApprove, onMarkOut, onM
                 <td className="px-3 py-3 text-sm">{x.approvedAt ?? "-"}</td>
                 <td className="px-3 py-3 text-sm">{x.returnedAt ?? "-"}</td>
                 <td className="px-3 py-3"><StatusBadge status={x.status} isLate={x.isLate} /></td>
+                <td className="px-3 py-3">
+                  {(x.photo || x.photoOut || x.photoIn) ? (
+                    <div className="flex gap-1.5">
+                      {x.photo && <ClickableImage src={x.photo} alt={`Foto guru piket - ${x.name}`} label={`Foto guru piket - ${x.name}`} className="h-9 w-9 rounded-md object-cover" />}
+                      {x.photoOut && <ClickableImage src={x.photoOut} alt={`Foto keluar - ${x.name}`} label={`Foto keluar - ${x.name}`} className="h-9 w-9 rounded-md object-cover" />}
+                      {x.photoIn && <ClickableImage src={x.photoIn} alt={`Foto masuk - ${x.name}`} label={`Foto masuk - ${x.name}`} className="h-9 w-9 rounded-md object-cover" />}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-300">-</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

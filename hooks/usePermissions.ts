@@ -56,6 +56,7 @@ export function usePermissions() {
             photoOut: d.photoOut || null,
             photoIn: d.photoIn || null,
             created: d.created || "",
+            createdAt: d.createdAt || "",
             status: d.status || "pending",
             approvedAt: d.approvedAt || null,
             returnedAt: d.returnedAt || null,
@@ -90,7 +91,9 @@ export function usePermissions() {
     ) => {
       const token = generateToken();
       const groupId = `GRP-${Date.now()}`;
-      const created = new Date().toLocaleString("id-ID");
+      const now = new Date();
+      const created = now.toLocaleString("id-ID");
+      const createdAt = now.toISOString();
 
       const docs = students.map((s) => ({
         token,
@@ -106,6 +109,7 @@ export function usePermissions() {
         photoOut: null,
         photoIn: null,
         created,
+        createdAt,
         status: "pending" as PermissionStatus,
         approvedAt: null,
         returnedAt: null,

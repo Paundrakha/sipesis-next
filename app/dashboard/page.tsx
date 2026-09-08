@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import TopBar from "@/components/TopBar";
@@ -8,6 +8,7 @@ import StatsCards from "@/components/StatsCards";
 import DataTable from "@/components/DataTable";
 import Link from "next/link";
 import { Plus, AlertTriangle, Search } from "lucide-react";
+import { getDateKey, getTodayKey } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -16,9 +17,26 @@ export default function DashboardPage() {
   const [filterClass, setFilterClass] = useState("");
   const [filterName, setFilterName] = useState("");
 
-  const lateStudents = permissions.filter((x) => x.status === "out" && x.isLate);
+  // Dashboard hanya menampilkan data hari ini; begitu tanggal berganti, otomatis kembali ke 0.
+  const [todayKey, setTodayKey] = useState(getTodayKey);
 
-  const filtered = permissions.filter((x) => {
+  useEffect(() => {
+    // Cek tiap menit kalau-kalau tab dibiarkan terbuka melewati tengah malam.
+    const interval = setInterval(() => {
+      const current = getTodayKey();
+      setTodayKey((prev) => (prev === current ? prev : current));
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const todaysPermissions = useMemo(
+    () => permissions.filter((x) => getDateKey(x) === todayKey),
+    [permissions, todayKey]
+  );
+
+  const lateStudents = todaysPermissions.filter((x) => x.status === "out" && x.isLate);
+
+  const filtered = todaysPermissions.filter((x) => {
     const matchClass = !filterClass || x.className.toLowerCase().includes(filterClass.toLowerCase());
     const matchName = !filterName || x.name.toLowerCase().includes(filterName.toLowerCase());
     return matchClass && matchName;
@@ -29,7 +47,7 @@ export default function DashboardPage() {
       <TopBar
         title="Dashboard"
         subtitle="Pantau aktivitas perizinan siswa hari ini."
-        permissions={permissions}
+        permissions={todaysPermissions}
       />
 
       {lateStudents.length > 0 && (
@@ -42,7 +60,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <StatsCards permissions={permissions} />
+      <StatsCards permissions={todaysPermissions} />
 
       {/* Filter */}
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -92,10 +110,10 @@ export default function DashboardPage() {
           <div className="mb-4 sm:mb-5">
             <h2 className="text-base font-bold text-gray-900 sm:text-lg">Antrian Siswa Berizin</h2>
             <p className="mt-0.5 text-xs text-muted sm:mt-1 sm:text-sm">
-              Scan token atau cek foto untuk validasi siswa keluar.
+              Lihat status siswa yang sedang berizin. Ambil foto keluar/masuk di halaman Pemantauan.
             </p>
           </div>
-          <DataTable permissions={filtered} view="guard" />
+          <DataTable permissions={filtered} view="guard" allowCapture={false} />
         </div>
       )}
     </div>
